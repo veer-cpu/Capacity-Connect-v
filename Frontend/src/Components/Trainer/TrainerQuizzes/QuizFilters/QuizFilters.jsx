@@ -19,10 +19,7 @@ import {
 import "./QuizFilters.css";
 
 const QuizFilters = ({
-  /* ======================================================
-     VALUES FROM TRAINER QUIZZES
-  ====================================================== */
-
+  totalQuizzes = 27,
   searchValue = "",
   course = "All Courses",
   status = "All Status",
@@ -381,7 +378,7 @@ const QuizFilters = ({
             <div className="quiz-filters-title-row">
               <h2>Quiz Filters</h2>
 
-              <span className="quiz-filters-count">24 Total Quizzes</span>
+              <span className="quiz-filters-count">{totalQuizzes ?? 27} Total Quizzes</span>
             </div>
 
             <p>Search and filter quizzes to find what you need.</p>

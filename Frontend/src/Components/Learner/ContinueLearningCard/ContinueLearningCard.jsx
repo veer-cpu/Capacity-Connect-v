@@ -24,34 +24,35 @@ import "./ContinueLearningCard.css";
 */
 
 const defaultLearning = {
-  courseTitle: "Backend Development Fundamentals",
-  category: "Backend Development",
-  level: "Intermediate",
-  moduleNumber: 4,
-  totalModules: 8,
-  moduleTitle: "REST API & Server Architecture",
-  progress: 65,
-  completedModules: 3,
-  remainingModules: 5,
-  remainingTime: "42 min",
-  description:
-    "Continue where you left off and strengthen your backend development fundamentals through practical learning.",
+  courseTitle: "No Active Course",
+  category: "General",
+  level: "N/A",
+  moduleNumber: 0,
+  totalModules: 0,
+  moduleTitle: "No modules in progress",
+  progress: 0,
+  completedModules: 0,
+  remainingModules: 0,
+  remainingTime: "—",
+  description: "Enroll in a course from the catalog to begin your learning journey.",
 };
+
+const upcomingModules = [];
 
 const ContinueLearningCard = ({ courseData, onContinueLearning, onViewCourse }) => {
   const currentLearning = courseData
     ? {
-        courseTitle: courseData.course_title || courseData.title || defaultLearning.courseTitle,
-        category: courseData.category || defaultLearning.category,
-        level: courseData.level || defaultLearning.level,
+        courseTitle: courseData.course_title || courseData.title || "Enrolled Course",
+        category: courseData.category || "Domain",
+        level: courseData.level || "Intermediate",
         moduleNumber: (courseData.completed_modules || 0) + 1,
         totalModules: courseData.total_modules || 5,
         moduleTitle: courseData.description ? courseData.description.substring(0, 45) + "..." : "Current Course Module",
         progress: courseData.completionPercentage || 0,
         completedModules: courseData.completed_modules || 0,
-        remainingModules: (courseData.total_modules || 5) - (courseData.completed_modules || 0),
+        remainingModules: Math.max(0, (courseData.total_modules || 5) - (courseData.completed_modules || 0)),
         remainingTime: "—",
-        description: courseData.course_description || courseData.description || defaultLearning.description,
+        description: courseData.course_description || courseData.description || "Active course module in progress.",
       }
     : defaultLearning;
   return (

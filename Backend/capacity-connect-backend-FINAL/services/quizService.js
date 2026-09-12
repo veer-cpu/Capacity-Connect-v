@@ -383,6 +383,40 @@ class QuizService {
       answers: parsedAnswers
     };
   }
+
+  // GET QUIZ ATTEMPTS FOR QUIZ
+  async getQuizAttempts(quizId) {
+    const result = await pool.query(
+      `SELECT qa.*, u.name AS user_name, u.email AS user_email
+       FROM quiz_attempts qa
+       JOIN users u ON u.id = qa.user_id
+       WHERE qa.quiz_id = $1
+       ORDER BY qa.created_at DESC`,
+      [quizId]
+    );
+    return result.rows;
+  }
+
+  // UPDATE QUIZ
+  async updateQuiz(quizId, { title, description, courseId, moduleId, passingScore, timeLimitMinutes }, userId, userRole) {
+    if (!['TRAINER', 'ADMIN'].includes(userRole)) {
+      throw new Error('Only trainer or admin can update quizzes');
+    }
+    const result = await pool.query(
+      `UPDATE quizzes
+       SET title = COALESCE($1, title),
+           description = COALESCE($2, description),
+           course_id = COALESCE($3, course_id),
+           module_id = COALESCE($4, module_id),
+           passing_score = COALESCE($5, passing_score),
+           time_limit_minutes = COALESCE($6, time_limit_minutes),
+           updated_at = NOW()
+       WHERE id = $7
+       RETURNING *`,
+      [title, description, courseId, moduleId, passingScore, timeLimitMinutes, quizId]
+    );
+    return result.rows[0];
+  }
 }
 
 module.exports = new QuizService();

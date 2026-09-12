@@ -149,6 +149,34 @@ class QuizController {
       next(error);
     }
   }
+
+  async updateQuiz(req, res, next) {
+    try {
+      const quizId = parseInt(req.params.id, 10);
+      const quiz = await quizService.updateQuiz(quizId, req.body, req.user.id, req.user.role);
+      return res.status(200).json({
+        success: true,
+        message: 'Quiz updated successfully',
+        data: quiz
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getQuizAttempts(req, res, next) {
+    try {
+      const quizId = parseInt(req.params.id, 10);
+      const attempts = await quizService.getQuizAttempts(quizId);
+      return res.status(200).json({
+        success: true,
+        count: attempts.length,
+        data: attempts
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new QuizController();

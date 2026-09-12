@@ -10,7 +10,19 @@ import {
 
 import "./WelcomeSection.css";
 
+import { useNavigate } from "react-router-dom";
+
 const WelcomeSection = () => {
+  const navigate = useNavigate();
+  const storedUser = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null;
+  const trainerName = storedUser?.name || "Trainer";
+  const currentDateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
   return (
     <section className="trainer-welcome">
       {/* =====================================================
@@ -26,11 +38,11 @@ const WelcomeSection = () => {
 
       <div className="trainer-welcome-content">
         {/* Date */}
-        <p className="trainer-welcome-date">Tuesday, 9 September 2025</p>
+        <p className="trainer-welcome-date">{currentDateStr}</p>
 
         {/* Greeting */}
         <h1 className="trainer-welcome-title">
-          Good Morning, Rohan!
+          Good Morning, {trainerName}!
           <span className="trainer-welcome-wave">👋</span>
         </h1>
 
@@ -122,7 +134,8 @@ const WelcomeSection = () => {
       <button
         type="button"
         className="trainer-welcome-action"
-        aria-label="Open trainer overview"
+        aria-label="Open trainer courses"
+        onClick={() => navigate('/trainer/trainer-courses')}
       >
         <LuArrowUpRight />
       </button>

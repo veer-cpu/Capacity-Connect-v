@@ -211,27 +211,8 @@ const CourseDetails = () => {
      ENROLL IN COURSE
   ========================================================= */
 
-  const handleEnroll = (selectedCourse) => {
-    if (!selectedCourse?.id) {
-      return;
-    }
-
-    /*
-      Prevent multiple clicks while enrollment
-      is being created.
-    */
-
-    if (isEnrolling) {
-      return;
-    }
-
-    /* -------------------------------------------------------
-       Already enrolled
-    ------------------------------------------------------- */
-
-    if (enrollment) {
-      console.log("Learner is already enrolled:", enrollment);
-
+  const handleEnroll = async (selectedCourse) => {
+    if (!selectedCourse?.id || isEnrolling || enrollment) {
       return;
     }
 
@@ -239,40 +220,24 @@ const CourseDetails = () => {
     setEnrollmentError("");
 
     try {
-      const result = createEnrollment(CURRENT_LEARNER_ID, selectedCourse.id);
+      const res = await apiFetch("/enrollments", {
+        method: "POST",
+        body: JSON.stringify({ course_id: selectedCourse.id }),
+      }, "LEARNER");
 
-      /* -----------------------------------------------------
-         Enrollment failed
-      ----------------------------------------------------- */
-
-      if (!result.success) {
-        setEnrollmentError(
-          result.message || "Unable to enroll in this course.",
-        );
-
-        /*
-          If an enrollment already exists,
-          keep it in state.
-        */
-
-        if (result.enrollment) {
-          setEnrollment(result.enrollment);
-        }
-
-        return;
+      if (res.data || res.success) {
+        setEnrollment({
+          id: res.data?.id || Date.now(),
+          courseId: selectedCourse.id,
+          status: "active",
+          progress: 0,
+        });
+      } else {
+        setEnrollmentError(res.message || "Unable to enroll in this course.");
       }
-
-      /* -----------------------------------------------------
-         Enrollment successful
-      ----------------------------------------------------- */
-
-      setEnrollment(result.enrollment);
-
-      console.log("Successfully enrolled:", result.enrollment);
     } catch (enrollmentCreateError) {
       console.error("Failed to create enrollment:", enrollmentCreateError);
-
-      setEnrollmentError("Something went wrong while enrolling in the course.");
+      setEnrollmentError(enrollmentCreateError.message || "Something went wrong while enrolling.");
     } finally {
       setIsEnrolling(false);
     }

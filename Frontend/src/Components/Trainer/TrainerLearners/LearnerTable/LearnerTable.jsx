@@ -19,88 +19,7 @@ import "./LearnerTable.css";
    LEARNER DATA
 ========================================================= */
 
-export const defaultLearners = [
-  {
-    id: 1,
-    name: "Aarav Sharma",
-    email: "aarav.sharma@example.com",
-    course: "React Development",
-    progress: 86,
-    status: "Active",
-    lastActivity: "2 hours ago",
-    avatar: "https://i.pravatar.cc/100?img=12",
-  },
-  {
-    id: 2,
-    name: "Priya Mehta",
-    email: "priya.mehta@example.com",
-    course: "Python for Data Science",
-    progress: 72,
-    status: "Active",
-    lastActivity: "5 hours ago",
-    avatar: "https://i.pravatar.cc/100?img=47",
-  },
-  {
-    id: 3,
-    name: "Rahul Verma",
-    email: "rahul.verma@example.com",
-    course: "UI/UX Design",
-    progress: 48,
-    status: "At Risk",
-    lastActivity: "1 day ago",
-    avatar: "https://i.pravatar.cc/100?img=33",
-  },
-  {
-    id: 4,
-    name: "Sneha Kapoor",
-    email: "sneha.kapoor@example.com",
-    course: "JavaScript Essentials",
-    progress: 90,
-    status: "Active",
-    lastActivity: "3 hours ago",
-    avatar: "https://i.pravatar.cc/100?img=44",
-  },
-  {
-    id: 5,
-    name: "Vikram Singh",
-    email: "vikram.singh@example.com",
-    course: "Cloud Computing",
-    progress: 65,
-    status: "Active",
-    lastActivity: "1 day ago",
-    avatar: "https://i.pravatar.cc/100?img=68",
-  },
-  {
-    id: 6,
-    name: "Ananya Patel",
-    email: "ananya.patel@example.com",
-    course: "Digital Marketing",
-    progress: 100,
-    status: "Completed",
-    lastActivity: "2 days ago",
-    avatar: "https://i.pravatar.cc/100?img=49",
-  },
-  {
-    id: 7,
-    name: "Karan Malhotra",
-    email: "karan.malhotra@example.com",
-    course: "Product Management",
-    progress: 40,
-    status: "At Risk",
-    lastActivity: "1 day ago",
-    avatar: "https://i.pravatar.cc/100?img=11",
-  },
-  {
-    id: 8,
-    name: "Neha Gupta",
-    email: "neha.gupta@example.com",
-    course: "Mobile App Development",
-    progress: 78,
-    status: "Active",
-    lastActivity: "4 hours ago",
-    avatar: "https://i.pravatar.cc/100?img=32",
-  },
-];
+export const defaultLearners = [];
 
 /* =========================================================
    COMPONENT
@@ -164,10 +83,6 @@ const LearnerTable = ({ learners = defaultLearners, viewMode = "list" }) => {
 
   const handleViewLearner = (learner) => {
     setOpenMenu(null);
-
-    window.alert(
-      `Learner Profile\n\nName: ${learner.name}\nEmail: ${learner.email}\nCourse: ${learner.course}\nProgress: ${learner.progress}%`,
-    );
   };
 
   /* =======================================================
@@ -175,7 +90,7 @@ const LearnerTable = ({ learners = defaultLearners, viewMode = "list" }) => {
   ======================================================= */
 
   const handleMessageLearner = (learner) => {
-    window.alert(`Open message conversation with ${learner.name}`);
+    setOpenMenu(null);
   };
 
   /* =======================================================
@@ -184,14 +99,6 @@ const LearnerTable = ({ learners = defaultLearners, viewMode = "list" }) => {
 
   const handleRemoveLearner = (learner) => {
     setOpenMenu(null);
-
-    const confirmed = window.confirm(
-      `Remove ${learner.name} from your learner list?`,
-    );
-
-    if (confirmed) {
-      window.alert(`${learner.name} has been removed.`);
-    }
   };
 
   /* =======================================================

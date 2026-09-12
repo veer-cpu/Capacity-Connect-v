@@ -63,11 +63,13 @@ const quizStats = [
   },
 ];
 
-const QuizStats = () => {
+const QuizStats = ({ totalQuizzes = 27 }) => {
+  const statsList = quizStats.map(s => s.id === 1 ? { ...s, value: String(totalQuizzes) } : s);
+
   return (
     <section className="quiz-stats" aria-label="Quiz statistics">
       <div className="quiz-stats-grid">
-        {quizStats.map((stat) => {
+        {statsList.map((stat) => {
           const Icon = stat.icon;
 
           return (

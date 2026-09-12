@@ -285,13 +285,25 @@ export default function Login({
             throw new Error(data.message || "Login failed");
         }
 
-        console.log("Login successful:", data);
+        if (data.data?.token) {
+            localStorage.setItem("token", data.data.token);
+            localStorage.setItem("user", JSON.stringify(data.data.user || {}));
+        }
 
         setSubmitSuccess(true);
 
         if (onLoginSuccess) {
             onLoginSuccess(data);
         }
+
+        setTimeout(() => {
+            const role = String(data.data?.user?.role || "").toUpperCase();
+            if (role === "TRAINER" || role === "ADMIN") {
+                navigate("/trainer");
+            } else {
+                navigate("/learner");
+            }
+        }, 400);
 
     } catch (error) {
         console.error("Login error:", error);
@@ -350,8 +362,10 @@ export default function Login({
             <button
               type="button"
               className="cc-log-social-btn"
-              onClick={() => handleSocialClick("Google")}
-              aria-label="Sign in with Google"
+              disabled
+              title="Social login disabled in demo mode"
+              aria-label="Sign in with Google (Disabled)"
+              style={{ opacity: 0.6, cursor: "not-allowed" }}
             >
               <Icons.Google />
               <span>Google</span>
@@ -359,8 +373,10 @@ export default function Login({
             <button
               type="button"
               className="cc-log-social-btn"
-              onClick={() => handleSocialClick("Apple")}
-              aria-label="Sign in with Apple"
+              disabled
+              title="Social login disabled in demo mode"
+              aria-label="Sign in with Apple (Disabled)"
+              style={{ opacity: 0.6, cursor: "not-allowed" }}
             >
               <Icons.Apple />
               <span>Apple</span>

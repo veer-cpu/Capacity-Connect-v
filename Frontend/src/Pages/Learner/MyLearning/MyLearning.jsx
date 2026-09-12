@@ -194,7 +194,7 @@ const MyLearning = () => {
   ========================================================= */
 
   const handleViewLearningDetails = () => {
-    console.log("View learning details");
+    navigate("/learner/courses");
   };
 
   /* =========================================================
@@ -202,7 +202,7 @@ const MyLearning = () => {
   ========================================================= */
 
   const handleViewLearningPath = () => {
-    console.log("View learning path");
+    navigate("/learner/skills");
   };
 
   /* =========================================================

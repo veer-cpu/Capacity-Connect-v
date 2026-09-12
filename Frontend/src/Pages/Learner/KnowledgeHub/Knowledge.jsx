@@ -49,24 +49,15 @@ const DEFAULT_FILTERS = {
    Filtered resources
 ========================================================= */
 
+import { useNavigate } from "react-router-dom";
+
 const Knowledge = () => {
-  /* =======================================================
-     KNOWLEDGE FILTER STATE
-
-     This is the single filter state for the page.
-
-     KnowledgeSearch changes it.
-     KnowledgeResources uses it.
-  ======================================================= */
+  const navigate = useNavigate();
 
   const [knowledgeFilters, setKnowledgeFilters] = useState(DEFAULT_FILTERS);
 
-  /* =======================================================
-     HEADER ACTION
-  ======================================================= */
-
   const handleExploreRecommendations = () => {
-    console.log("Explore Knowledge Recommendations");
+    navigate("/learner/recommendations");
   };
 
   /* =======================================================

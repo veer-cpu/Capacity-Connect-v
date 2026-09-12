@@ -21,11 +21,19 @@ router.post('/:id/start', (req, res, next) => quizController.startAttempt(req, r
 router.post('/attempts/:attemptId/submit', (req, res, next) => quizController.submitAttempt(req, res, next));
 router.get('/attempts/:attemptId/result', (req, res, next) => quizController.getAttemptResult(req, res, next));
 
+router.get('/:id/attempts', (req, res, next) => quizController.getQuizAttempts(req, res, next));
+
 // Trainer / Admin management
 router.post(
   '/',
   authorizeRoles('TRAINER', 'ADMIN'),
   (req, res, next) => quizController.createQuiz(req, res, next)
+);
+
+router.put(
+  '/:id',
+  authorizeRoles('TRAINER', 'ADMIN'),
+  (req, res, next) => quizController.updateQuiz(req, res, next)
 );
 
 router.post(

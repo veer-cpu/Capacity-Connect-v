@@ -626,11 +626,11 @@ const QuizList = ({
                 </div>
 
                 <span
-                  className={`quiz-type-badge quiz-type-${quiz.type
+                  className={`quiz-type-badge quiz-type-${String(quiz.type || "Assessment")
                     .toLowerCase()
                     .replace(/\s+/g, "-")}`}
                 >
-                  {quiz.type}
+                  {quiz.type || "Assessment"}
                 </span>
 
                 {/* ======================================

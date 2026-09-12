@@ -3,14 +3,21 @@ const API_BASE_URL = "http://localhost:5000/api";
 const tokensByRole = {};
 
 export async function getAuthToken(role = 'LEARNER') {
+  const storedToken = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null;
+
+  if (storedToken && (!storedUser || storedUser.role?.toUpperCase() === role.toUpperCase())) {
+    return storedToken;
+  }
+
   if (tokensByRole[role]) {
     return tokensByRole[role];
   }
 
   const credentials =
     role === 'TRAINER'
-      ? { email: 'trainer@test.com', password: 'trainer123' }
-      : { email: 'learner@test.com', password: 'learner123' };
+      ? { email: 'trainer@test.com', password: 'password123' }
+      : { email: 'learner@test.com', password: 'password123' };
 
   try {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {

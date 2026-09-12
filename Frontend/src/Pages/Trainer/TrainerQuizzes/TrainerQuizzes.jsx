@@ -233,13 +233,14 @@ const TrainerQuizzes = () => {
           Quiz Statistics
       ======================================== */}
 
-      <QuizStats />
+      <QuizStats totalQuizzes={realQuizzes.length || 27} />
 
       {/* ========================================
           Quiz Filters
       ======================================== */}
 
       <QuizFilters
+        totalQuizzes={realQuizzes.length || 27}
         searchValue={searchValue}
         course={course}
         status={status}

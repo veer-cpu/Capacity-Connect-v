@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../../api/apiClient";
 
 import WelcomeBanner from "../../../Components/Learner/WelcomeBanner/WelcomeBanner";
@@ -14,9 +15,11 @@ import ResourceCard from "../../../Components/Learner/ResourceCard/ResourceCard"
 import "./Dashboard.css";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [certificateCount, setCertificateCount] = useState(0);
   const [enrollments, setEnrollments] = useState([]);
+  const [competencies, setCompetencies] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,6 +33,9 @@ const Dashboard = () => {
 
         const enrollData = await apiFetch("/enrollments/my");
         setEnrollments(enrollData.data || []);
+
+        const compData = await apiFetch("/competencies/profile");
+        setCompetencies(compData.data || []);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -95,9 +101,7 @@ const Dashboard = () => {
 
       <WelcomeBanner
         name={user?.name || "Learner"}
-        onProfileClick={() => {
-          console.log("Navigate to profile");
-        }}
+        onProfileClick={() => navigate('/learner/profile')}
       />
 
       {/* ==========================================================
@@ -149,9 +153,9 @@ const Dashboard = () => {
       ========================================================== */}
 
       <SkillProgressCard
-        onViewSkills={() => {
-          console.log("Navigate to My Skills");
-        }}
+        user={user}
+        competencies={competencies}
+        onViewSkills={() => navigate('/learner/skills')}
       />
 
       {/* ==========================================================
@@ -159,45 +163,27 @@ const Dashboard = () => {
       ========================================================== */}
 
       <SkillGapCard
-        onViewSkillGaps={() => {
-          console.log("Navigate to Skill Gaps");
-        }}
-        onExploreTraining={() => {
-          console.log("Navigate to Recommended Training");
-        }}
+        onViewSkillGaps={() => navigate('/learner/skill-gaps')}
+        onExploreTraining={() => navigate('/learner/recommendations')}
       />
       <RecommendationCard
-        onViewAllRecommendations={() => {
-          console.log("Navigate to Recommendations");
-        }}
-        onStartLearning={() => {
-          console.log("Start Learning");
-        }}
-        onViewCourse={(course) => {
-          console.log("View Course:", course);
-        }}
+        onViewAllRecommendations={() => navigate('/learner/recommendations')}
+        onStartLearning={() => navigate('/learner/learning')}
+        onViewCourse={(course) => navigate(`/learner/courses/${course?.id || enrollments[0]?.course_id || 1}`)}
       />
       <ContinueLearningCard
         courseData={enrollments[0]}
-        onContinueLearning={() => {
-          console.log("Continue Learning");
-        }}
-        onViewCourse={() => {
-          console.log("View Course");
-        }}
+        onContinueLearning={() => navigate('/learner/learning')}
+        onViewCourse={() => navigate(`/learner/courses/${enrollments[0]?.course_id || 1}`)}
       />
       <CertificateCard
-        onViewAllCertificates={() => console.log("Navigate to Certificates")}
-        onViewCertificate={(certificate) =>
-          console.log("View Certificate:", certificate)
-        }
-        onDownloadCertificate={(certificate) =>
-          console.log("Download Certificate:", certificate)
-        }
+        onViewAllCertificates={() => navigate('/learner/certificates')}
+        onViewCertificate={() => navigate('/learner/certificates')}
+        onDownloadCertificate={() => navigate('/learner/certificates')}
       />
       <ResourceCard
-        onViewAllResources={() => console.log("Navigate to Knowledge Hub")}
-        onViewResource={(resource) => console.log("View Resource:", resource)}
+        onViewAllResources={() => navigate('/learner/knowledge-hub')}
+        onViewResource={() => navigate('/learner/knowledge-hub')}
       />
     </div>
   );

@@ -23,97 +23,29 @@ import "./SkillProgressCard.css";
 |--------------------------------------------------------------------------
 */
 
-const learner = {
-  name: "Dev",
-  role: "Learner",
-  designation: "Web Development",
-  profileImage: "https://i.pravatar.cc/160?img=12",
-  overallScore: 78,
-  skillsOnTrack: 4,
-  skillGaps: 2,
-  completedSkills: 6,
-};
+const SkillProgressCard = ({ user, competencies = [], onViewSkills }) => {
+  const learner = {
+    name: user?.name || "Learner",
+    role: user?.role || "Learner",
+    designation: user?.bio || "Capacity Building",
+    profileImage: "https://i.pravatar.cc/160?img=12",
+    overallScore: competencies.length > 0 ? 80 : 0,
+    skillsOnTrack: competencies.filter((c) => c.current_level === "ADVANCED" || c.current_level === "INTERMEDIATE").length,
+    skillGaps: competencies.filter((c) => c.current_level === "BEGINNER" || !c.current_level).length,
+    completedSkills: competencies.length,
+  };
 
-const skills = [
-  {
-    id: 1,
-    name: "UI/UX Design",
-    category: "Design",
-    level: 4,
-    levelLabel: "Advanced",
-    color: "violet",
-    icon: "🎨",
-  },
-  {
-    id: 2,
-    name: "JavaScript",
-    category: "Development",
-    level: 4,
-    levelLabel: "Advanced",
-    color: "orange",
-    icon: "JS",
-  },
-  {
-    id: 3,
-    name: "Web Development",
-    category: "Development",
-    level: 3,
-    levelLabel: "Intermediate",
-    color: "cyan",
-    icon: "WEB",
-  },
-  {
-    id: 4,
-    name: "React",
-    category: "Development",
-    level: 3,
-    levelLabel: "Intermediate",
-    color: "ocean",
-    icon: "⚛",
-  },
-  {
-    id: 5,
-    name: "PostgreSQL",
-    category: "Database",
-    level: 2,
-    levelLabel: "Beginner",
-    color: "green",
-    icon: "DB",
-  },
-];
+  const skills = competencies.map((c, index) => ({
+    id: c.id || c.competency_id || index + 1,
+    name: c.competency_name || c.name || "Competency",
+    category: c.category || "Domain",
+    level: c.current_level === "ADVANCED" ? 4 : c.current_level === "INTERMEDIATE" ? 3 : 2,
+    levelLabel: c.current_level || "Beginner",
+    color: index % 2 === 0 ? "violet" : "ocean",
+    icon: "🎯",
+  }));
 
-const weeklyActivity = [
-  {
-    day: "Mon",
-    hours: 1.8,
-  },
-  {
-    day: "Tue",
-    hours: 2.6,
-  },
-  {
-    day: "Wed",
-    hours: 1.2,
-  },
-  {
-    day: "Thu",
-    hours: 3.4,
-  },
-  {
-    day: "Fri",
-    hours: 2.2,
-  },
-  {
-    day: "Sat",
-    hours: 4.1,
-  },
-  {
-    day: "Sun",
-    hours: 2.9,
-  },
-];
-
-const SkillProgressCard = ({ onViewSkills }) => {
+  const weeklyActivity = [];
   /*
   |--------------------------------------------------------------------------
   | Helper Functions

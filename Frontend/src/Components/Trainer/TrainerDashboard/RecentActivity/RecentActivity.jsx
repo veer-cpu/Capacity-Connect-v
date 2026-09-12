@@ -25,68 +25,7 @@ import "./RecentActivity.css";
 // ACTIVITY DATA
 // =====================================================
 
-const initialActivities = [
-  {
-    id: 1,
-    type: "course",
-    icon: LuGraduationCap,
-    name: "Sarah Johnson",
-    title: "completed a course",
-    description: 'Completed "UI/UX Design Fundamentals" with 92% score',
-    time: "2h ago",
-    category: "Courses",
-  },
-  {
-    id: 2,
-    type: "assignment",
-    icon: LuFileText,
-    name: "Michael Chen",
-    title: "submitted an assignment",
-    description: 'Submitted "Database Design Project"',
-    time: "4h ago",
-    category: "Assignments",
-  },
-  {
-    id: 3,
-    type: "quiz",
-    icon: LuActivity,
-    name: "Emily Davis",
-    title: "completed a quiz",
-    description: 'Scored 85% in "JavaScript Basics Quiz"',
-    time: "6h ago",
-    category: "Quizzes",
-  },
-  {
-    id: 4,
-    type: "session",
-    icon: LuCalendarDays,
-    name: "Training Session",
-    title: "scheduled",
-    description: '"React Components Deep Dive" on Mar 15, 2025',
-    time: "8h ago",
-    category: "Sessions",
-  },
-  {
-    id: 5,
-    type: "performance",
-    icon: LuTrendingUp,
-    name: "James Wilson",
-    title: "performance improved",
-    description: "Average score increased from 78% to 88%",
-    time: "1d ago",
-    category: "Performance",
-  },
-  {
-    id: 6,
-    type: "learner",
-    icon: LuUsersRound,
-    name: "Alex Thompson",
-    title: "joined a course",
-    description: 'Joined "Project Management"',
-    time: "1d ago",
-    category: "Learners",
-  },
-];
+const initialActivities = [];
 
 // =====================================================
 // CATEGORY CONFIG
