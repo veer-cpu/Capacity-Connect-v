@@ -19,11 +19,56 @@ import {
   LuX,
 } from "react-icons/lu";
 
+import { getQuizResult } from "../../../../../services/quizApi";
+
 import "./QuizAttempts.css";
 
 /* =========================================================
-   ATTEMPT DATA
+   ATTEMPT DATA & NORMALIZER
 ========================================================= */
+
+const normalizeAttempt = (att, idx) => {
+  const learnerName = att.learner || att.user_name || "Learner User";
+  const emailStr = att.email || att.user_email || "learner@example.com";
+  const initials =
+    learnerName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "LU";
+
+  const pct = Number(att.percentage ?? att.score ?? 0);
+  const isPassed = att.passed === true || att.status === "Passed" || pct >= 60;
+
+  const dateObj = att.submitted_at ? new Date(att.submitted_at) : new Date();
+  const dateStr = dateObj.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const timeStr = dateObj.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return {
+    ...att,
+    id: att.id || idx + 1,
+    learner: learnerName,
+    email: emailStr,
+    initials,
+    attempt: att.attempt || 1,
+    score: Number(pct.toFixed(2)),
+    timeTaken: att.timeTaken || "20m 00s",
+    date: att.date || dateStr,
+    time: att.time || timeStr,
+    status: isPassed ? "Passed" : "Failed",
+    theme:
+      att.theme ||
+      ["blue", "lavender", "peach", "rose", "sky", "mint"][idx % 6],
+  };
+};
 
 const initialAttempts = [
   {
@@ -281,7 +326,15 @@ const QuizAttempts = ({
      STATE
   ======================================================= */
 
-  const [attempts, setAttempts] = useState(externalAttempts || initialAttempts);
+  const [attempts, setAttempts] = useState(() =>
+    (externalAttempts || initialAttempts).map(normalizeAttempt),
+  );
+
+  useEffect(() => {
+    if (externalAttempts && Array.isArray(externalAttempts)) {
+      setAttempts(externalAttempts.map(normalizeAttempt));
+    }
+  }, [externalAttempts]);
 
   const [searchValue, setSearchValue] = useState("");
 
@@ -549,36 +602,35 @@ const QuizAttempts = ({
     setOpenMenu(null);
   };
 
-  /* =======================================================
-     VIEW ATTEMPT
-  ======================================================= */
+  const [detailedResult, setDetailedResult] = useState(null);
 
-   const handleMenuToggle = (
-    event,
-    attemptId,
-  ) => {
+  const handleMenuToggle = (event, attemptId) => {
     event.stopPropagation();
-
     setOpenFilter(null);
-
-    setOpenMenu((previous) =>
-      previous === attemptId
-        ? null
-        : attemptId,
-    );
+    setOpenMenu((previous) => (previous === attemptId ? null : attemptId));
   };
 
   const handleViewAttempt = (attempt) => {
     setOpenMenu(null);
+    setSelectedAttempt(attempt);
+    setDetailedResult(null);
+    setActiveModal("view");
+
+    if (attempt.id) {
+      getQuizResult(attempt.id, "TRAINER")
+        .then((res) => {
+          setDetailedResult(res);
+        })
+        .catch((err) => {
+          console.error("Failed to load attempt result breakdown:", err);
+          setDetailedResult(null);
+        });
+    }
 
     if (onViewAttempt) {
       onViewAttempt(attempt);
-      return;
     }
-
-    setSelectedAttempt(attempt);
-    setActiveModal("view");
-    };
+  };
     /* =======================================================
      ATTEMPT MENU
   ======================================================= */
@@ -1495,6 +1547,82 @@ const QuizAttempts = ({
                   <strong>{selectedAttempt.time}</strong>
                 </div>
               </div>
+
+              {detailedResult && detailedResult.answers && detailedResult.answers.length > 0 && (
+                <div
+                  className="quiz-modal-answers-breakdown"
+                  style={{
+                    marginTop: "1.25rem",
+                    paddingTop: "1rem",
+                    borderTop: "1px solid rgba(0, 0, 0, 0.08)",
+                  }}
+                >
+                  <h4
+                    style={{
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      marginBottom: "0.75rem",
+                    }}
+                  >
+                    Question Breakdown ({detailedResult.answers.length} Questions)
+                  </h4>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                      maxHeight: "220px",
+                      overflowY: "auto",
+                      paddingRight: "0.25rem",
+                    }}
+                  >
+                    {detailedResult.answers.map((ans, idx) => (
+                      <div
+                        key={ans.id || idx}
+                        style={{
+                          padding: "0.6rem 0.75rem",
+                          borderRadius: "8px",
+                          backgroundColor: ans.is_correct
+                            ? "rgba(16, 185, 129, 0.08)"
+                            : "rgba(239, 68, 68, 0.08)",
+                          borderLeft: `3px solid ${
+                            ans.is_correct ? "#10b981" : "#ef4444"
+                          }`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                            marginBottom: "0.25rem",
+                          }}
+                        >
+                          Q{idx + 1}. {ans.question_text}
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: "0.78rem",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            color: ans.is_correct ? "#047857" : "#b91c1c",
+                          }}
+                        >
+                          <span>
+                            Submitted Answer:{" "}
+                            <strong>{ans.user_answer || "No answer"}</strong>
+                          </span>
+
+                          <span>
+                            {ans.is_correct ? "✓ Correct" : `✗ Correct: ${ans.correct_answer}`}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="quiz-attempt-modal-footer">

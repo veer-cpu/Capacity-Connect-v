@@ -18,6 +18,12 @@ import {
   LuX,
 } from "react-icons/lu";
 
+import {
+  addQuestion as addQuestionApi,
+  updateQuestion as updateQuestionApi,
+  deleteQuestion as deleteQuestionApi,
+} from "../../../../../services/quizApi";
+
 import "./QuizQuestions.css";
 
 /* =========================================================
@@ -359,7 +365,32 @@ const sortOptions = [
    QUIZ QUESTIONS
 ========================================================= */
 
+const normalizeQuestion = (q, idx) => {
+  let opts = q.options || [];
+  if (typeof opts === "string") {
+    try {
+      opts = JSON.parse(opts);
+    } catch (e) {
+      opts = [opts];
+    }
+  }
+  return {
+    ...q,
+    id: q.id || idx + 1,
+    number: q.number || q.order_index || idx + 1,
+    question: q.question || q.question_text || "",
+    description: q.description || "Select the correct answer from the options below.",
+    type: q.type || (q.question_type === "MULTIPLE_CHOICE" ? "MCQ" : q.question_type) || "MCQ",
+    options: Array.isArray(opts) ? opts : [],
+    correctAnswer: q.correctAnswer ?? q.correct_answer,
+    marks: Number(q.marks) || 10,
+    difficulty: q.difficulty || "Medium",
+    theme: q.theme || ["blue", "lavender", "rose", "sky", "mint", "peach"][idx % 6],
+  };
+};
+
 const QuizQuestions = ({
+  quizId,
   questions: externalQuestions,
   onAddQuestion,
   onEditQuestion,
@@ -369,9 +400,23 @@ const QuizQuestions = ({
      STATE
   ======================================================= */
 
-  const [questions, setQuestions] = useState(
-    externalQuestions || initialQuestions,
+  const [questions, setQuestions] = useState(() =>
+    (externalQuestions || initialQuestions).map(normalizeQuestion),
   );
+
+  React.useEffect(() => {
+    if (externalQuestions && externalQuestions.length > 0) {
+      setQuestions(externalQuestions.map(normalizeQuestion));
+    }
+  }, [externalQuestions]);
+
+  const [qText, setQText] = useState("");
+  const [qOptionA, setQOptionA] = useState("");
+  const [qOptionB, setQOptionB] = useState("");
+  const [qOptionC, setQOptionC] = useState("");
+  const [qOptionD, setQOptionD] = useState("");
+  const [qCorrect, setQCorrect] = useState("");
+  const [qMarks, setQMarks] = useState(10);
 
   const [searchValue, setSearchValue] = useState("");
 
@@ -581,6 +626,14 @@ const QuizQuestions = ({
   const handleEditQuestion = (question) => {
     setOpenMenu(null);
     setSelectedQuestion(question);
+    const opts = question.options || [];
+    setQText(question.question || question.question_text || "");
+    setQOptionA(opts[0] || "");
+    setQOptionB(opts[1] || "");
+    setQOptionC(opts[2] || "");
+    setQOptionD(opts[3] || "");
+    setQCorrect((question.correctAnswer ?? question.correct_answer ?? opts[0]) || "");
+    setQMarks(question.marks || 10);
     setActiveModal("edit");
 
     if (onEditQuestion) {
@@ -620,8 +673,15 @@ const QuizQuestions = ({
       return;
     }
 
+    const qId = selectedQuestion.id;
+    if (qId && typeof qId === "number") {
+      deleteQuestionApi(qId, "TRAINER").catch((err) =>
+        console.error("Failed to delete question from backend:", err),
+      );
+    }
+
     setQuestions((previous) =>
-      previous.filter((question) => question.id !== selectedQuestion.id),
+      previous.filter((question) => question.id !== qId),
     );
 
     if (onDeleteQuestion) {
@@ -637,13 +697,106 @@ const QuizQuestions = ({
   ======================================================= */
 
   const handleAddQuestion = () => {
+    setSelectedQuestion(null);
+    setQText("");
+    setQOptionA("");
+    setQOptionB("");
+    setQOptionC("");
+    setQOptionD("");
+    setQCorrect("");
+    setQMarks(10);
+    setActiveModal("add");
+
     if (onAddQuestion) {
       onAddQuestion();
-      return;
+    }
+  };
+
+  const saveNewQuestion = async () => {
+    const opts = [qOptionA, qOptionB, qOptionC, qOptionD].filter(Boolean);
+    const correctVal = qCorrect || opts[0] || "";
+    const newOrder = questions.length + 1;
+
+    try {
+      if (quizId) {
+        const created = await addQuestionApi(
+          quizId,
+          {
+            questionText: qText || "New Question",
+            questionType: "MULTIPLE_CHOICE",
+            options: opts.length > 0 ? opts : ["Option A", "Option B", "Option C", "Option D"],
+            correctAnswer: correctVal,
+            marks: Number(qMarks) || 10,
+            orderIndex: newOrder,
+          },
+          "TRAINER",
+        );
+        const norm = normalizeQuestion(created, questions.length);
+        setQuestions((prev) => [...prev, norm]);
+      } else {
+        const localQ = normalizeQuestion(
+          {
+            id: Date.now(),
+            question_text: qText || "New Question",
+            options: opts,
+            correct_answer: correctVal,
+            marks: Number(qMarks) || 10,
+            order_index: newOrder,
+          },
+          questions.length,
+        );
+        setQuestions((prev) => [...prev, localQ]);
+      }
+    } catch (err) {
+      console.error("Failed to add question to backend:", err);
     }
 
-    setSelectedQuestion(null);
-    setActiveModal("add");
+    closeModal();
+  };
+
+  const saveEditedQuestion = async () => {
+    if (!selectedQuestion) return;
+
+    const opts = [qOptionA, qOptionB, qOptionC, qOptionD].filter(Boolean);
+    const correctVal = qCorrect || opts[0] || "";
+
+    try {
+      if (selectedQuestion.id && typeof selectedQuestion.id === "number") {
+        await updateQuestionApi(
+          selectedQuestion.id,
+          {
+            questionText: qText,
+            options: opts,
+            correctAnswer: correctVal,
+            marks: Number(qMarks) || 10,
+          },
+          "TRAINER",
+        );
+      }
+
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === selectedQuestion.id
+            ? normalizeQuestion(
+                {
+                  ...q,
+                  question: qText,
+                  question_text: qText,
+                  options: opts,
+                  correctAnswer: correctVal,
+                  correct_answer: correctVal,
+                  marks: Number(qMarks) || 10,
+                },
+                q.number - 1,
+              )
+            : q,
+        ),
+      );
+    } catch (err) {
+      console.error("Failed to update question on backend:", err);
+    }
+
+    closeModal();
   };
 
   /* =======================================================
@@ -1041,7 +1194,13 @@ const QuizQuestions = ({
 
                 <div className="quiz-question-options">
                   {question.options.map((option, index) => {
-                    const isCorrect = index === question.correctAnswer;
+                    const cVal = question.correctAnswer ?? question.correct_answer;
+                    const isCorrect =
+                      typeof cVal === "number"
+                        ? index === cVal
+                        : cVal !== undefined && cVal !== null
+                        ? String(option).trim().toLowerCase() === String(cVal).trim().toLowerCase()
+                        : false;
 
                     return (
                       <div
@@ -1086,7 +1245,18 @@ const QuizQuestions = ({
                       <LuCheck size={12} strokeWidth={2} />
                       Correct Answer:{" "}
                       <strong>
-                        {String.fromCharCode(65 + question.correctAnswer)}
+                        {(() => {
+                          const cVal = question.correctAnswer ?? question.correct_answer;
+                          if (cVal === undefined || cVal === null) return "N/A";
+                          if (typeof cVal === "number") return String.fromCharCode(65 + cVal);
+                          if (Array.isArray(question.options)) {
+                            const idx = question.options.findIndex(
+                              (o) => String(o).trim().toLowerCase() === String(cVal).trim().toLowerCase()
+                            );
+                            if (idx !== -1) return `${String.fromCharCode(65 + idx)} (${cVal})`;
+                          }
+                          return String(cVal);
+                        })()}
                       </strong>
                     </span>
                   </div>
@@ -1325,17 +1495,162 @@ const QuizQuestions = ({
               </button>
             </div>
 
-            <div className="quiz-edit-placeholder">
-              <div className="quiz-edit-placeholder-icon">
-                <LuFilePenLine size={21} strokeWidth={1.7} />
+            <div
+              className="quiz-question-modal-body"
+              style={{
+                padding: "1rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
+              <div>
+                <label
+                  style={{
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    display: "block",
+                    marginBottom: "0.25rem",
+                  }}
+                >
+                  Question Text
+                </label>
+                <input
+                  type="text"
+                  value={qText}
+                  onChange={(e) => setQText(e.target.value)}
+                  placeholder="Enter question text..."
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem",
+                    borderRadius: "6px",
+                    border: "1px solid #ccc",
+                  }}
+                />
               </div>
 
-              <h4>Edit Question</h4>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.5rem",
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Option A
+                  </label>
+                  <input
+                    type="text"
+                    value={qOptionA}
+                    onChange={(e) => setQOptionA(e.target.value)}
+                    placeholder="Option A"
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
 
-              <p>
-                The question editor will be connected here when the quiz editor
-                workflow is added.
-              </p>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Option B
+                  </label>
+                  <input
+                    type="text"
+                    value={qOptionB}
+                    onChange={(e) => setQOptionB(e.target.value)}
+                    placeholder="Option B"
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Option C
+                  </label>
+                  <input
+                    type="text"
+                    value={qOptionC}
+                    onChange={(e) => setQOptionC(e.target.value)}
+                    placeholder="Option C"
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Option D
+                  </label>
+                  <input
+                    type="text"
+                    value={qOptionD}
+                    onChange={(e) => setQOptionD(e.target.value)}
+                    placeholder="Option D"
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "2fr 1fr",
+                  gap: "0.5rem",
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Correct Answer (Text)
+                  </label>
+                  <input
+                    type="text"
+                    value={qCorrect}
+                    onChange={(e) => setQCorrect(e.target.value)}
+                    placeholder="Exact correct option text..."
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Marks
+                  </label>
+                  <input
+                    type="number"
+                    value={qMarks}
+                    onChange={(e) => setQMarks(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="quiz-modal-footer">
@@ -1343,7 +1658,7 @@ const QuizQuestions = ({
                 Cancel
               </button>
 
-              <button type="button" onClick={closeModal}>
+              <button type="button" onClick={saveEditedQuestion}>
                 Save Changes
               </button>
             </div>
@@ -1373,17 +1688,162 @@ const QuizQuestions = ({
               </button>
             </div>
 
-            <div className="quiz-add-placeholder">
-              <div className="quiz-add-placeholder-icon">
-                <LuPlus size={22} strokeWidth={1.8} />
+            <div
+              className="quiz-question-modal-body"
+              style={{
+                padding: "1rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
+              <div>
+                <label
+                  style={{
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    display: "block",
+                    marginBottom: "0.25rem",
+                  }}
+                >
+                  Question Text
+                </label>
+                <input
+                  type="text"
+                  value={qText}
+                  onChange={(e) => setQText(e.target.value)}
+                  placeholder="Enter question text..."
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem",
+                    borderRadius: "6px",
+                    border: "1px solid #ccc",
+                  }}
+                />
               </div>
 
-              <h4>Add New Question</h4>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.5rem",
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Option A
+                  </label>
+                  <input
+                    type="text"
+                    value={qOptionA}
+                    onChange={(e) => setQOptionA(e.target.value)}
+                    placeholder="Option A"
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
 
-              <p>
-                The complete question builder can be connected here for creating
-                MCQ, True/False, and Short Answer questions.
-              </p>
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Option B
+                  </label>
+                  <input
+                    type="text"
+                    value={qOptionB}
+                    onChange={(e) => setQOptionB(e.target.value)}
+                    placeholder="Option B"
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Option C
+                  </label>
+                  <input
+                    type="text"
+                    value={qOptionC}
+                    onChange={(e) => setQOptionC(e.target.value)}
+                    placeholder="Option C"
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Option D
+                  </label>
+                  <input
+                    type="text"
+                    value={qOptionD}
+                    onChange={(e) => setQOptionD(e.target.value)}
+                    placeholder="Option D"
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "2fr 1fr",
+                  gap: "0.5rem",
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Correct Answer (Text)
+                  </label>
+                  <input
+                    type="text"
+                    value={qCorrect}
+                    onChange={(e) => setQCorrect(e.target.value)}
+                    placeholder="Exact correct option text..."
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>
+                    Marks
+                  </label>
+                  <input
+                    type="number"
+                    value={qMarks}
+                    onChange={(e) => setQMarks(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.4rem",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="quiz-modal-footer">
@@ -1391,8 +1851,8 @@ const QuizQuestions = ({
                 Cancel
               </button>
 
-              <button type="button" onClick={closeModal}>
-                Continue
+              <button type="button" onClick={saveNewQuestion}>
+                Save Question
               </button>
             </div>
           </div>

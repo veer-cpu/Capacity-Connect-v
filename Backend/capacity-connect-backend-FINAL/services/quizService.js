@@ -83,6 +83,204 @@ class QuizService {
     return result.rows[0];
   }
 
+  // UPDATE QUIZ
+  async updateQuiz({
+    quizId,
+    courseId,
+    moduleId,
+    title,
+    description,
+    passingScore,
+    totalMarks,
+    timeLimitMinutes,
+    userRole
+  }) {
+    if (!['TRAINER', 'ADMIN'].includes(userRole)) {
+      throw new Error('Only trainer or admin can update quizzes');
+    }
+
+    const result = await pool.query(
+      `UPDATE quizzes
+       SET
+         course_id = COALESCE($1, course_id),
+         module_id = COALESCE($2, module_id),
+         title = COALESCE($3, title),
+         description = COALESCE($4, description),
+         passing_score = COALESCE($5, passing_score),
+         total_marks = COALESCE($6, total_marks),
+         time_limit_minutes = COALESCE($7, time_limit_minutes)
+       WHERE id = $8
+       RETURNING *`,
+      [
+        courseId || null,
+        moduleId || null,
+        title || null,
+        description || null,
+        passingScore || null,
+        totalMarks || null,
+        timeLimitMinutes || null,
+        quizId
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Quiz not found');
+    }
+
+    return result.rows[0];
+  }
+
+  // DELETE QUIZ
+  async deleteQuiz(quizId, userRole) {
+    if (!['TRAINER', 'ADMIN'].includes(userRole)) {
+      throw new Error('Only trainer or admin can delete quizzes');
+    }
+
+    await pool.query(`DELETE FROM quiz_attempt_answers WHERE attempt_id IN (SELECT id FROM quiz_attempts WHERE quiz_id = $1)`, [quizId]);
+    await pool.query(`DELETE FROM quiz_attempts WHERE quiz_id = $1`, [quizId]);
+    await pool.query(`DELETE FROM quiz_questions WHERE quiz_id = $1`, [quizId]);
+    const result = await pool.query(`DELETE FROM quizzes WHERE id = $1 RETURNING id`, [quizId]);
+
+    if (result.rows.length === 0) {
+      throw new Error('Quiz not found');
+    }
+
+    return { message: 'Quiz deleted successfully', id: quizId };
+  }
+
+  // UPDATE QUESTION
+  async updateQuestion({
+    questionId,
+    questionText,
+    questionType,
+    options,
+    correctAnswer,
+    marks,
+    orderIndex,
+    userRole
+  }) {
+    if (!['TRAINER', 'ADMIN'].includes(userRole)) {
+      throw new Error('Only trainer or admin can update questions');
+    }
+
+    const formattedOptions =
+      typeof options === 'object' ? JSON.stringify(options) : options;
+
+    const result = await pool.query(
+      `UPDATE quiz_questions
+       SET
+         question_text = COALESCE($1, question_text),
+         question_type = COALESCE($2, question_type),
+         options = COALESCE($3, options),
+         correct_answer = COALESCE($4, correct_answer),
+         marks = COALESCE($5, marks),
+         order_index = COALESCE($6, order_index)
+       WHERE id = $7
+       RETURNING *`,
+      [
+        questionText || null,
+        questionType || null,
+        formattedOptions || null,
+        correctAnswer || null,
+        marks || null,
+        orderIndex || null,
+        questionId
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error('Question not found');
+    }
+
+    return result.rows[0];
+  }
+
+  // DELETE QUESTION
+  async deleteQuestion(questionId, userRole) {
+    if (!['TRAINER', 'ADMIN'].includes(userRole)) {
+      throw new Error('Only trainer or admin can delete questions');
+    }
+
+    await pool.query(`DELETE FROM quiz_attempt_answers WHERE question_id = $1`, [questionId]);
+    const result = await pool.query(`DELETE FROM quiz_questions WHERE id = $1 RETURNING id`, [questionId]);
+
+    if (result.rows.length === 0) {
+      throw new Error('Question not found');
+    }
+
+    return { message: 'Question deleted successfully', id: questionId };
+  }
+
+  // GET ALL QUIZZES
+  async getAllQuizzes() {
+    const result = await pool.query(
+      `SELECT
+         q.id,
+         q.course_id,
+         q.module_id,
+         q.title,
+         q.description,
+         q.passing_score,
+         q.total_marks,
+         q.time_limit_minutes,
+         q.created_by,
+         q.created_at,
+         c.title AS course_title,
+         m.title AS module_title
+       FROM quizzes q
+       LEFT JOIN courses c ON c.id = q.course_id
+       LEFT JOIN modules m ON m.id = q.module_id
+       ORDER BY q.id ASC`
+    );
+
+    const qCountsResult = await pool.query(
+      `SELECT quiz_id, COUNT(*) AS count FROM quiz_questions GROUP BY quiz_id`
+    );
+    const aCountsResult = await pool.query(
+      `SELECT quiz_id, COUNT(*) AS count FROM quiz_attempts GROUP BY quiz_id`
+    );
+
+    const qMap = {};
+    for (const row of qCountsResult.rows) {
+      qMap[row.quiz_id] = Number(row.count);
+    }
+    const aMap = {};
+    for (const row of aCountsResult.rows) {
+      aMap[row.quiz_id] = Number(row.count);
+    }
+
+    return result.rows.map((quiz) => ({
+      ...quiz,
+      question_count: qMap[quiz.id] || 0,
+      attempt_count: aMap[quiz.id] || 0
+    }));
+  }
+
+  // GET ALL ATTEMPTS FOR A QUIZ (For Trainer/Admin)
+  async getQuizAttempts(quizId) {
+    const result = await pool.query(
+      `SELECT
+         qa.id,
+         qa.quiz_id,
+         qa.user_id,
+         qa.score,
+         qa.percentage,
+         qa.passed,
+         qa.status,
+         qa.started_at,
+         qa.submitted_at,
+         u.name AS user_name,
+         u.email AS user_email
+       FROM quiz_attempts qa
+       LEFT JOIN users u ON u.id = qa.user_id
+       WHERE qa.quiz_id = $1
+       ORDER BY qa.submitted_at DESC NULLS LAST, qa.id DESC`,
+      [quizId]
+    );
+
+    return result.rows;
+  }
+
   // GET QUIZ
   async getQuiz(quizId) {
     const result = await pool.query(

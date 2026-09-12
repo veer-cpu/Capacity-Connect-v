@@ -12,8 +12,10 @@ const { authorizeRoles } = require('../middleware/roleMiddleware');
 router.use(authenticateToken);
 
 // Quiz metadata & questions
+router.get('/', (req, res, next) => quizController.getAllQuizzes(req, res, next));
 router.get('/:id', (req, res, next) => quizController.getQuiz(req, res, next));
 router.get('/:id/questions', (req, res, next) => quizController.getQuizQuestions(req, res, next));
+router.get('/:id/attempts', (req, res, next) => quizController.getQuizAttempts(req, res, next));
 
 // Learner attempts
 router.post('/:id/start', (req, res, next) => quizController.startAttempt(req, res, next));
@@ -27,10 +29,34 @@ router.post(
   (req, res, next) => quizController.createQuiz(req, res, next)
 );
 
+router.put(
+  '/:id',
+  authorizeRoles('TRAINER', 'ADMIN'),
+  (req, res, next) => quizController.updateQuiz(req, res, next)
+);
+
+router.delete(
+  '/:id',
+  authorizeRoles('TRAINER', 'ADMIN'),
+  (req, res, next) => quizController.deleteQuiz(req, res, next)
+);
+
 router.post(
   '/:id/questions',
   authorizeRoles('TRAINER', 'ADMIN'),
   (req, res, next) => quizController.addQuestion(req, res, next)
+);
+
+router.put(
+  '/questions/:questionId',
+  authorizeRoles('TRAINER', 'ADMIN'),
+  (req, res, next) => quizController.updateQuestion(req, res, next)
+);
+
+router.delete(
+  '/questions/:questionId',
+  authorizeRoles('TRAINER', 'ADMIN'),
+  (req, res, next) => quizController.deleteQuestion(req, res, next)
 );
 
 module.exports = router;

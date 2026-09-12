@@ -31,6 +31,45 @@ class QuizController {
     }
   }
 
+  async updateQuiz(req, res, next) {
+    try {
+      const quizId = parseInt(req.params.id, 10);
+      const { courseId, moduleId, title, description, passingScore, totalMarks, timeLimitMinutes } = req.body;
+      const quiz = await quizService.updateQuiz({
+        quizId,
+        courseId: courseId ? parseInt(courseId, 10) : undefined,
+        moduleId: moduleId ? parseInt(moduleId, 10) : undefined,
+        title,
+        description,
+        passingScore,
+        totalMarks,
+        timeLimitMinutes,
+        userRole: req.user.role
+      });
+      return res.status(200).json({
+        success: true,
+        message: 'Quiz updated successfully',
+        data: quiz
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteQuiz(req, res, next) {
+    try {
+      const quizId = parseInt(req.params.id, 10);
+      const result = await quizService.deleteQuiz(quizId, req.user.role);
+      return res.status(200).json({
+        success: true,
+        message: 'Quiz deleted successfully',
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async addQuestion(req, res, next) {
     try {
       const quizId = parseInt(req.params.id, 10);
@@ -50,6 +89,71 @@ class QuizController {
         success: true,
         message: 'Question added successfully',
         data: question
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateQuestion(req, res, next) {
+    try {
+      const questionId = parseInt(req.params.questionId, 10);
+      const { questionText, questionType, options, correctAnswer, marks, orderIndex } = req.body;
+      const question = await quizService.updateQuestion({
+        questionId,
+        questionText,
+        questionType,
+        options,
+        correctAnswer,
+        marks,
+        orderIndex,
+        userRole: req.user.role
+      });
+      return res.status(200).json({
+        success: true,
+        message: 'Question updated successfully',
+        data: question
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteQuestion(req, res, next) {
+    try {
+      const questionId = parseInt(req.params.questionId, 10);
+      const result = await quizService.deleteQuestion(questionId, req.user.role);
+      return res.status(200).json({
+        success: true,
+        message: 'Question deleted successfully',
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getAllQuizzes(req, res, next) {
+    try {
+      const quizzes = await quizService.getAllQuizzes();
+      return res.status(200).json({
+        success: true,
+        count: quizzes.length,
+        data: quizzes
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getQuizAttempts(req, res, next) {
+    try {
+      const quizId = parseInt(req.params.id, 10);
+      const attempts = await quizService.getQuizAttempts(quizId);
+      return res.status(200).json({
+        success: true,
+        count: attempts.length,
+        data: attempts
       });
     } catch (error) {
       next(error);

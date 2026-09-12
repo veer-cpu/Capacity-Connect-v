@@ -335,7 +335,20 @@ const QuizList = ({
   ====================================================== */
 
   const filteredQuizzes = useMemo(() => {
-    let result = [...quizItems];
+    let result = quizItems.map((quiz) => ({
+      ...quiz,
+      course: quiz.course || quiz.course_title || "General",
+      type: quiz.type || "Assessment",
+      status: quiz.status || "Published",
+      questions: quiz.questions ?? quiz.question_count ?? 15,
+      attempts: quiz.attempts ?? quiz.attempt_count ?? 0,
+      duration:
+        quiz.duration ??
+        (quiz.time_limit_minutes ? `${quiz.time_limit_minutes} min` : "20 min"),
+      score: quiz.score ?? quiz.passing_score ?? 60,
+      icon: quiz.icon || "react",
+      theme: quiz.theme || "blue",
+    }));
 
     /* ----------------------------------------------------
        SEARCH
