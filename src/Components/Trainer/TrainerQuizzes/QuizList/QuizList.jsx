@@ -337,7 +337,7 @@ const QuizList = ({
   const filteredQuizzes = useMemo(() => {
     let result = quizItems.map((quiz) => ({
       ...quiz,
-      course: quiz.course || quiz.course_title || "General",
+      course: quiz.course_title || quiz.course || "General",
       type: quiz.type || "Assessment",
       status: quiz.status || "Published",
       questions: quiz.questions ?? quiz.question_count ?? 15,

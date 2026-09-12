@@ -4,9 +4,17 @@ import QuizzesHeader from "../../../Components/Trainer/TrainerQuizzes/QuizzesHea
 import QuizStats from "../../../Components/Trainer/TrainerQuizzes/QuizStats/QuizStats";
 import QuizFilters from "../../../Components/Trainer/TrainerQuizzes/QuizFilters/QuizFilters";
 import QuizList from "../../../Components/Trainer/TrainerQuizzes/QuizList/QuizList";
-import { createQuiz, getQuizzes, updateQuiz } from "../../../services/quizApi";
+import { createQuiz, getModulesByCourse, getQuizzes, updateQuiz } from "../../../services/quizApi";
 
 import "./TrainerQuizzes.css";
+
+const MOES_COURSES = [
+  { id: 4, title: "Fundamentals of Meteorological Observations" },
+  { id: 5, title: "Weather Forecasting Techniques" },
+  { id: 6, title: "Doppler Weather Radar (DWR) Operations and Maintenance" },
+  { id: 7, title: "Climate Data Analysis and Management" },
+  { id: 8, title: "Disaster Warning and Dissemination Systems" },
+];
 
 const TrainerQuizzes = () => {
   const [realQuizzes, setRealQuizzes] = useState(null);
@@ -36,16 +44,43 @@ const TrainerQuizzes = () => {
   const [editingQuiz, setEditingQuiz] = useState(null);
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
-  const [formCourseId, setFormCourseId] = useState(1);
+  const [formCourseId, setFormCourseId] = useState(4);
+  const [formModuleId, setFormModuleId] = useState(6);
+  const [availableModules, setAvailableModules] = useState([]);
   const [formPassing, setFormPassing] = useState(60);
   const [formTimeLimit, setFormTimeLimit] = useState(30);
+
+  useEffect(() => {
+    if (!formCourseId) return;
+    let isMounted = true;
+    getModulesByCourse(formCourseId, "TRAINER")
+      .then((mods) => {
+        if (isMounted && Array.isArray(mods) && mods.length > 0) {
+          setAvailableModules(mods);
+          setFormModuleId((prev) => {
+            if (mods.some((m) => Number(m.id) === Number(prev))) {
+              return prev;
+            }
+            return mods[0].id;
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch modules for course:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [formCourseId]);
 
   useEffect(() => {
     const onCreate = () => {
       setEditingQuiz(null);
       setFormTitle("");
       setFormDesc("");
-      setFormCourseId(1);
+      setFormCourseId(4);
+      setFormModuleId(6);
       setFormPassing(60);
       setFormTimeLimit(30);
       setShowQuizModal(true);
@@ -57,7 +92,8 @@ const TrainerQuizzes = () => {
         setEditingQuiz(q);
         setFormTitle(q.title || "");
         setFormDesc(q.description || "");
-        setFormCourseId(q.course_id || 1);
+        setFormCourseId(q.course_id || 4);
+        setFormModuleId(q.module_id || 6);
         setFormPassing(q.passing_score ?? q.score ?? 60);
         setFormTimeLimit(q.time_limit_minutes ?? 30);
         setShowQuizModal(true);
@@ -81,7 +117,8 @@ const TrainerQuizzes = () => {
           {
             title: formTitle,
             description: formDesc,
-            courseId: Number(formCourseId) || 1,
+            courseId: Number(formCourseId) || 4,
+            moduleId: Number(formModuleId) || null,
             passingScore: Number(formPassing) || 60,
             timeLimitMinutes: Number(formTimeLimit) || 30,
           },
@@ -93,7 +130,8 @@ const TrainerQuizzes = () => {
       } else {
         const created = await createQuiz(
           {
-            courseId: Number(formCourseId) || 1,
+            courseId: Number(formCourseId) || 4,
+            moduleId: Number(formModuleId) || null,
             title: formTitle || "New Quiz",
             description: formDesc || "",
             passingScore: Number(formPassing) || 60,
@@ -287,17 +325,41 @@ const TrainerQuizzes = () => {
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
-                <div>
-                  <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>Course ID</label>
-                  <input
-                    type="number"
-                    value={formCourseId}
-                    onChange={(e) => setFormCourseId(e.target.value)}
-                    style={{ width: "100%", padding: "0.4rem", borderRadius: "6px", border: "1px solid #ccc" }}
-                  />
-                </div>
+              <div>
+                <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.25rem" }}>
+                  Course
+                </label>
+                <select
+                  value={formCourseId}
+                  onChange={(e) => setFormCourseId(Number(e.target.value))}
+                  style={{ width: "100%", padding: "0.5rem", borderRadius: "6px", border: "1px solid #ccc", background: "#fff" }}
+                >
+                  {MOES_COURSES.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
+              <div>
+                <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.25rem" }}>
+                  Module / Unit
+                </label>
+                <select
+                  value={formModuleId}
+                  onChange={(e) => setFormModuleId(Number(e.target.value))}
+                  style={{ width: "100%", padding: "0.5rem", borderRadius: "6px", border: "1px solid #ccc", background: "#fff" }}
+                >
+                  {availableModules.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                 <div>
                   <label style={{ fontSize: "0.78rem", fontWeight: 500 }}>Passing %</label>
                   <input

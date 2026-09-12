@@ -105,14 +105,11 @@ const QuizFilters = ({
 
   const courseOptions = [
     "All Courses",
-    "React for Beginners",
-    "Python for Data Science",
-    "UI/UX Design Fundamentals",
-    "Cloud Computing Basics",
-    "Digital Marketing Strategy",
-    "Node.js Backend Development",
-    "AI for Everyone",
-    "Flutter App Development",
+    "Fundamentals of Meteorological Observations",
+    "Weather Forecasting Techniques",
+    "Doppler Weather Radar (DWR) Operations and Maintenance",
+    "Climate Data Analysis and Management",
+    "Disaster Warning and Dissemination Systems",
   ];
 
   const statusOptions = ["All Status", "Published", "Draft", "Archived"];

@@ -148,7 +148,18 @@ export async function submitQuiz(attemptId, answers) {
   return response.data;
 }
 
+export async function getCourses(role = 'TRAINER') {
+  const response = await fetchWithAuth('/courses', {}, role);
+  return response.data || [];
+}
+
+export async function getModulesByCourse(courseId, role = 'TRAINER') {
+  const response = await fetchWithAuth(`/modules/course/${courseId}`, {}, role);
+  return response.data || [];
+}
+
 export async function getQuizResult(attemptId, role = 'LEARNER') {
   const response = await fetchWithAuth(`/quizzes/attempts/${attemptId}/result`, {}, role);
   return response.data;
 }
+
